@@ -3,9 +3,10 @@
 #define BUTTON_PIN  (WIOLTE_D38)
 
 WioLTE Wio;
+#define INTERVAL    (100)
 
-volatile bool StateChanged = false;
-volatile bool State = false;
+int buttonState_before = 0 ;
+int buttonState_now = 0 ;
 
 // ----------------------
 // 初期値一覧
@@ -23,13 +24,6 @@ float latitude_before = 0;
 float longitude_before = 0;
 
 int start_time;
-
-void change_state()
-{
-  State = !State;
-  StateChanged = true;
-  delay(150);
-}
 
 void send_to_soracom()
 {
@@ -222,8 +216,6 @@ void setup()
   delay(500);
 
   pinMode(BUTTON_PIN, INPUT);
-  attachInterrupt(BUTTON_PIN, change_state, CHANGE);
-
 
   start_time = millis();
   
@@ -238,12 +230,17 @@ void loop()
 {
 
   // ボタンでのアクション
-  if (StateChanged) {
-    if (State) {
-      send_to_soracom();
-    }
-    StateChanged = false;
+  int buttonState_now = digitalRead(BUTTON_PIN);
+  // ボタンONの時
+  if ((buttonState_now == 1) && (buttonState_before == 0)){
+    send_to_soracom();
+    buttonState_before = 1;
   }
+  // ボタンOFFの時
+  if ((buttonState_now == 0) && (buttonState_before == 1)){
+    buttonState_before = 0;
+  }
+
 
   // 定期実行のアクション
 
@@ -253,8 +250,9 @@ void loop()
   if (gps_progress_time > regular_action_interval_time_msec) {
     start_time = millis();
     send_to_soracom();
-    delay(10000);
   }
+
+  delay(INTERVAL);
   
 }
 
